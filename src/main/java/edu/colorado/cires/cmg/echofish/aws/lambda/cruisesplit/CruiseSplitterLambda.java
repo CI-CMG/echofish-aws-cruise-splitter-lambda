@@ -12,6 +12,8 @@ import edu.colorado.cires.cmg.echofish.data.model.CruiseProcessingMessage;
 import edu.colorado.cires.cmg.echofish.data.model.jackson.ObjectMapperCreator;
 import edu.colorado.cires.cmg.echofish.data.s3.S3OperationsImpl;
 import edu.colorado.cires.cmg.echofish.data.sns.SnsNotifierFactoryImpl;
+import java.util.HashMap;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,8 +21,18 @@ import java.time.Instant;
 import java.util.Objects;
 
 public class CruiseSplitterLambda implements RequestHandler<SNSEvent, Void> {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(CruiseSplitterLambda.class);
+
+
+    static {
+        Map<String, String> map = new HashMap<>();
+        map.put("INPUT_BUCKET", System.getenv("INPUT_BUCKET"));
+        map.put("TOPIC_ARN", System.getenv("TOPIC_ARN"));
+        map.put("TABLE_NAME", System.getenv("TABLE_NAME"));
+        map.put("BUCKET_REGION", System.getenv("BUCKET_REGION"));
+        LOGGER.info("ENV {}", map);
+    }
+
     private static final ObjectMapper OBJECT_MAPPER = ObjectMapperCreator.create();
     private static final CruiseSplitterLambdaHandler HANDLER = new CruiseSplitterLambdaHandler(
             new S3OperationsImpl(AmazonS3ClientBuilder.standard().withRegion(Objects.requireNonNull(System.getenv("BUCKET_REGION"))).build()),
