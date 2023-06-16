@@ -23,7 +23,7 @@ public class CruiseSplitterLambda implements RequestHandler<SNSEvent, Void> {
     private static final Logger LOGGER = LoggerFactory.getLogger(CruiseSplitterLambda.class);
     private static final ObjectMapper OBJECT_MAPPER = ObjectMapperCreator.create();
     private static final CruiseSplitterLambdaHandler HANDLER = new CruiseSplitterLambdaHandler(
-            new S3OperationsImpl(AmazonS3ClientBuilder.defaultClient()),
+            new S3OperationsImpl(AmazonS3ClientBuilder.standard().withRegion(Objects.requireNonNull(System.getenv("BUCKET_REGION"))).build()),
             new SnsNotifierFactoryImpl(OBJECT_MAPPER, AmazonSNSClientBuilder.defaultClient()),
             AmazonDynamoDBClientBuilder.standard().build(),
             new CruiseSplitterLambdaConfiguration(
