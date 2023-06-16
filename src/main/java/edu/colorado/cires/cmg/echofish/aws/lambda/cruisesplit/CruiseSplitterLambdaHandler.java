@@ -43,6 +43,18 @@ public class CruiseSplitterLambdaHandler {
 
     LOGGER.info("Started Event: {}", message);
 
+    if (message.getCruiseName() == null || message.getCruiseName().isEmpty()) {
+      throw new IllegalArgumentException("cruiseName is required");
+    }
+
+    if (message.getShipName() == null || message.getShipName().isEmpty()) {
+      throw new IllegalArgumentException("shipName is required");
+    }
+
+    if (message.getSensorName() == null || message.getSensorName().isEmpty()) {
+      throw new IllegalArgumentException("sensorName is required");
+    }
+
     for (String fileName : getRawFiles(message)) {
       message = copyMessage(message);
       message.setFileName(fileName);
