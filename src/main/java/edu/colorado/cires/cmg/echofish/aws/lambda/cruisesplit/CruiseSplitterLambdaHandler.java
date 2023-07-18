@@ -109,7 +109,7 @@ public class CruiseSplitterLambdaHandler {
     record.setShipName(message.getShipName());
     record.setSensorName(message.getSensorName());
     record.setPipelineTime(nowProvider.get().toString());
-    record.setPipelineStatus("PROCESSING");
+    record.setPipelineStatus(FileInfoRecord.PipelineStatus.PROCESSING);
     mapper.save(record, DynamoDBMapperConfig.TableNameOverride.withTableNameReplacement(configuration.getTableName()).config());
   }
 
