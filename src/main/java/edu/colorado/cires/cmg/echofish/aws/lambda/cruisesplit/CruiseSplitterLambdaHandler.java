@@ -59,7 +59,7 @@ public class CruiseSplitterLambdaHandler {
       message = copyMessage(message);
       message.setFileName(fileName);
       String fileStatus = getFileStatus(message).orElse("NONE");
-      if (!fileStatus.equals("SUCCESS")) {
+      if (!fileStatus.equals(FileInfoRecord.PipelineStatus.SUCCESS_CRUISE_SPLITTER)) {
         setProcessingFileStatus(message);
         notifyTopic(message);
       }
@@ -109,7 +109,7 @@ public class CruiseSplitterLambdaHandler {
     record.setShipName(message.getShipName());
     record.setSensorName(message.getSensorName());
     record.setPipelineTime(nowProvider.get().toString());
-    record.setPipelineStatus(FileInfoRecord.PipelineStatus.PROCESSING);
+    record.setPipelineStatus(FileInfoRecord.PipelineStatus.PROCESSING_CRUISE_SPLITTER);
     mapper.save(record, DynamoDBMapperConfig.TableNameOverride.withTableNameReplacement(configuration.getTableName()).config());
   }
 

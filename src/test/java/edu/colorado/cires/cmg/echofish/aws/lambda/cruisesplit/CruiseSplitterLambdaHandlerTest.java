@@ -6,6 +6,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
 import com.amazonaws.services.dynamodbv2.model.*;
+import edu.colorado.cires.cmg.echofish.data.dynamo.FileInfoRecord.PipelineStatus;
 import edu.colorado.cires.cmg.echofish.aws.test.MockS3Operations;
 import edu.colorado.cires.cmg.echofish.aws.test.S3TestUtils;
 import edu.colorado.cires.cmg.echofish.data.dynamo.FileInfoRecord;
@@ -104,7 +105,7 @@ class CruiseSplitterLambdaHandlerTest {
           record.setCruiseName("HB0707");
           record.setShipName("Henry_B._Bigelow");
           record.setSensorName("EK60");
-          record.setPipelineStatus("PROCESSING");
+          record.setPipelineStatus(PipelineStatus.PROCESSING_CRUISE_SPLITTER);
           record.setPipelineTime(TIME.toString());
           record.setFileName(file);
           return record;
