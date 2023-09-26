@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -55,18 +56,19 @@ public class CruiseSplitterLambdaHandler {
       throw new IllegalArgumentException("sensorName is required");
     }
 
+    ArrayList<CruiseProcessingMessage> messages = new ArrayList<>();
     for (String fileName : getRawFiles(message)) {
       message = copyMessage(message);
       message.setFileName(fileName);
       String fileStatus = getFileStatus(message).orElse("NONE");
       if (!fileStatus.equals(FileInfoRecord.PipelineStatus.SUCCESS_CRUISE_SPLITTER)) {
         setProcessingFileStatus(message);
-        notifyTopic(message);
+        messages.add(message);
       }
     }
+    messages.forEach(this::notifyTopic);
 
     LOGGER.info("Finished Event: {}", message);
-
   }
 
   private static CruiseProcessingMessage copyMessage(CruiseProcessingMessage source) {
