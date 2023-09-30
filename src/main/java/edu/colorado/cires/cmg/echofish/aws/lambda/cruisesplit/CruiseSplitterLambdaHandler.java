@@ -14,9 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -82,11 +80,50 @@ public class CruiseSplitterLambdaHandler {
   private List<String> getRawFiles(CruiseProcessingMessage message) {
     String prefix = String.format("data/raw/%s/%s/%s/", message.getShipName(), message.getCruiseName(), message.getSensorName());
     // Note any files with predicate 'NOISE' are to be ignored, see: "Bell_M._Shimada/SH1507"
-    return s3.listObjects(configuration.getInputBucket(), prefix).stream()
+    ArrayList<String> rawNoiseRemoved = new ArrayList<>(s3.listObjects(configuration.getInputBucket(), prefix).stream()
             .filter(key -> key.endsWith(".raw") && !key.contains("NOISE"))
             .map(key -> key.split("/")[5])
             .sorted()
-            .collect(Collectors.toList());
+            .collect(Collectors.toList())
+    );
+
+//    List<String> rawFilesFiltered = new ArrayList<>(Arrays.asList("A000", "A123", "A124", "A455", "A456", "A789"));
+//    if (message.getShipName() == "Miller_Freeman") {
+//        list.removeIf(s -> s.compareToIgnoreCase("A123") < 0);
+//        list.removeIf(s -> s.compareToIgnoreCase("A456") > 0);
+//    }
+    // MF0710, Miller_Freeman, HAKE2007-D20070708-T010210.raw to HAKE2007-D20070708-T200449.raw
+    if (message.getShipName() == "Miller_Freeman" && message.getCruiseName() == "MF0710") {
+        rawNoiseRemoved.removeIf(s -> s.compareToIgnoreCase("HAKE2007-D20070708-T010210.raw") < 0);
+        rawNoiseRemoved.removeIf(s -> s.compareToIgnoreCase("HAKE2007-D20070708-T200449.raw") > 0);
+    }
+    // MF0903, Miller_Freeman, MF2009-D20090724-T015244.raw to MF2009-D20090724-T183253.raw
+    if (message.getShipName() == "Miller_Freeman" && message.getCruiseName() == "MF0903") {
+      rawNoiseRemoved.removeIf(s -> s.compareToIgnoreCase("MF2009-D20090724-T015244.raw") < 0);
+      rawNoiseRemoved.removeIf(s -> s.compareToIgnoreCase("MF2009-D20090724-T183253.raw") > 0);
+    }
+    // SH1103, Bell_M._Shimada, HAKE2011-D20110721-T203942.raw to HAKE2011-D20110722-T005319.raw
+    if (message.getShipName() == "Bell_M._Shimada" && message.getCruiseName() == "SH1103") {
+      rawNoiseRemoved.removeIf(s -> s.compareToIgnoreCase("HAKE2011-D20110721-T203942.raw") < 0);
+      rawNoiseRemoved.removeIf(s -> s.compareToIgnoreCase("HAKE2011-D20110722-T005319.raw") > 0);
+    }
+    // SH1204, Bell_M._Shimada, SaKe_2012-D20120724-T192810.raw to SaKe_2012-D20120725-T004607.raw
+    if (message.getShipName() == "Bell_M._Shimada" && message.getCruiseName() == "SH1204") {
+      rawNoiseRemoved.removeIf(s -> s.compareToIgnoreCase("SaKe_2012-D20120724-T192810.raw") < 0);
+      rawNoiseRemoved.removeIf(s -> s.compareToIgnoreCase("SaKe_2012-D20120725-T004607.raw") > 0);
+    }
+    // SH1305, Bell_M._Shimada, SaKe_2013-D20130729-T161646.raw to SaKe_2013-D20130730-T015635.raw
+    if (message.getShipName() == "Bell_M._Shimada" && message.getCruiseName() == "SH1305") {
+      rawNoiseRemoved.removeIf(s -> s.compareToIgnoreCase("SaKe_2013-D20130729-T161646.raw") < 0);
+      rawNoiseRemoved.removeIf(s -> s.compareToIgnoreCase("SaKe_2013-D20130730-T015635.raw") > 0);
+    }
+    // SH1507, Bell_M._Shimada, SaKe2015-D20150719-T190837 to SaKe2015-D20150719-T195842
+    if (message.getShipName() == "Bell_M._Shimada" && message.getCruiseName() == "SH1507") {
+      rawNoiseRemoved.removeIf(s -> s.compareToIgnoreCase("SaKe2015-D20150719-T190837") < 0);
+      rawNoiseRemoved.removeIf(s -> s.compareToIgnoreCase("SaKe2015-D20150719-T195842") > 0);
+    }
+
+    return rawNoiseRemoved;
   }
 
   private void notifyTopic(CruiseProcessingMessage message) {
