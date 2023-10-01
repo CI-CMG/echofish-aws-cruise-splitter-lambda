@@ -126,12 +126,8 @@ class CruiseSplitterLambdaHandlerTest {
         System.setProperty("sqlite4java.library.path", "native-libs");
         S3TestUtils.cleanupMockS3Directory(INPUT_BUCKET);
 //        Path parent = INPUT_BUCKET.resolve("data/raw/Henry_B._Bigelow/HB0707/EK60");
-        Path parent = INPUT_BUCKET.resolve("data/raw/Miller_Freeman/MF0710/EK60");
-        Files.createDirectories(parent);
+
 //        for (String file : FILES) {
-        for (String file : FILES_MF0710 ) {
-            Files.write(parent.resolve(file), new byte[0]);
-        }
         dynamo = DynamoDBEmbedded.create().amazonDynamoDB();
         mapper = new DynamoDBMapper(dynamo);
         sns = mock(SnsNotifierFactory.class);
@@ -155,6 +151,13 @@ class CruiseSplitterLambdaHandlerTest {
 
     @Test
     public void testEmptyDb() throws Exception {
+
+      Path parent = INPUT_BUCKET.resolve("data/raw/Miller_Freeman/MF0710/EK60");
+      Files.createDirectories(parent);
+      for (String file : FILES_MF0710 ) {
+        Files.write(parent.resolve(file), new byte[0]);
+      }
+
         SnsNotifier snsNotifier = mock(SnsNotifier.class);
         when(sns.createNotifier()).thenReturn(snsNotifier);
 
@@ -231,5 +234,57 @@ class CruiseSplitterLambdaHandlerTest {
 
         return ddb.createTable(request);
     }
+
+
+    @Test
+    public void testSh1305() throws Exception {
+
+      Path parent = INPUT_BUCKET.resolve("data/raw/Bell_M._Shimada/SH1305/EK60");
+      Files.createDirectories(parent);
+      for (String file : Files.readAllLines(Paths.get("src/test/resources/SH1305.txt")) ) {
+        Files.write(parent.resolve(file.replaceFirst("data/raw/Bell_M._Shimada/SH1305/EK60/", "")), new byte[0]);
+      }
+
+        SnsNotifier snsNotifier = mock(SnsNotifier.class);
+        when(sns.createNotifier()).thenReturn(snsNotifier);
+
+
+        CruiseProcessingMessage message = new CruiseProcessingMessage();
+        message.setCruiseName("SH1305");
+        message.setShipName("Bell_M._Shimada");
+        message.setSensorName("EK60");
+
+        handler.handleRequest(message);
+
+        List<FileInfoRecord> expected = Files.readAllLines(Paths.get("src/test/resources/SH1305-expected.txt")).stream()
+            .map(file -> file.replaceFirst("data/raw/Bell_M._Shimada/SH1305/EK60/", ""))
+            .map(file -> {
+                FileInfoRecord record = new FileInfoRecord();
+                record.setCruiseName("SH1305");
+                record.setShipName("Bell_M._Shimada");
+                record.setSensorName("EK60");
+                record.setPipelineStatus(PipelineStatus.PROCESSING_CRUISE_SPLITTER);
+                record.setPipelineTime(TIME.toString());
+                record.setFileName(file);
+                return record;
+            }).collect(Collectors.toList());
+        Set<FileInfoRecord> saved = mapper.scan(FileInfoRecord.class, new DynamoDBScanExpression(),
+            DynamoDBMapperConfig.TableNameOverride.withTableNameReplacement(TABLE_NAME).config()).stream().collect(Collectors.toSet());
+
+        assertEquals(new HashSet<>(expected), saved);
+
+        List<CruiseProcessingMessage> expectedMessages = expected.stream()
+            .map(record -> {
+                CruiseProcessingMessage expectedMessage = new CruiseProcessingMessage();
+                expectedMessage.setCruiseName(record.getCruiseName());
+                expectedMessage.setShipName(record.getShipName());
+                expectedMessage.setSensorName(record.getSensorName());
+                expectedMessage.setFileName(record.getFileName());
+                return expectedMessage;
+            }).collect(Collectors.toList());
+
+        expectedMessages.forEach(expectedMessage -> verify(snsNotifier).notify(eq(TOPIC_ARN), eq(expectedMessage)));
+    }
+
 
 }
